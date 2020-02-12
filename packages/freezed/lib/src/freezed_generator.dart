@@ -19,6 +19,7 @@ class ConstructorDetails {
     @required this.parameters,
     @required this.impliedProperties,
     @required this.fullName,
+    @required this.copyAsName,
   });
 
   final String name;
@@ -27,6 +28,7 @@ class ConstructorDetails {
   final List<Property> impliedProperties;
   final bool isDefault;
   final String fullName;
+  final String copyAsName;
 
   String get callbackName => constructorNameToCallbackName(name);
 
@@ -41,8 +43,25 @@ class ConstructorDetails {
       parameters: $parameters,
       impliedProperties: $impliedProperties,
       fullName: $fullName,
+      copyAsName: $copyAsName,
     )
 ''';
+  }
+
+  bool isPropertyWithNamedRequired(String name) {
+    return parameters.positionalParameters.any((e) => e.name == name) ||
+        parameters.optionalPositionalParameters.any((e) => e.isRequired && e.name == name);
+  }
+
+  Parameter parameterWithName(String name) {
+    return parameters.allParameters.firstWhere((element) => element.name == name, orElse: () => null);
+  }
+
+  bool hasMatchingPropertyWith({@required String name, @required String type}) {
+    final parameter = parameterWithName(name);
+    if (parameter == null) return false;
+
+    return parameter.type == type;
   }
 }
 
@@ -179,14 +198,25 @@ class FreezedGenerator extends ParserGenerator<_GlobalData, Data, Freezed> {
           ? '${element.name}$generics'
           : '${element.name}$generics.${constructor.name}';
 
+      final isDefault = isDefaultConstructor(constructor);
+
       result.add(
         ConstructorDetails(
           name: constructor.name,
+          // ignore: prefer_interpolation_to_compose_strings
+          copyAsName: 'copyAs' +
+              (isDefault
+                  ? 'Default'
+                  : constructor.name.replaceRange(
+                      0,
+                      1,
+                      constructor.name[0].toUpperCase(),
+                    )),
           fullName: fullName,
           impliedProperties: [
             for (final parameter in constructor.parameters) Property.fromParameter(parameter),
           ],
-          isDefault: isDefaultConstructor(constructor),
+          isDefault: isDefault,
           parameters: ParametersTemplate.fromParameterElements(constructor.parameters),
           redirectedName: redirectedName,
         ),
@@ -208,6 +238,7 @@ class FreezedGenerator extends ParserGenerator<_GlobalData, Data, Freezed> {
 
     yield Abstract(
       name: data.name,
+      commonProperties: data.commonProperties,
       genericsDefinition: data.genericsDefinitionTemplate,
       genericsParameter: data.genericsParameterTemplate,
       shouldGenerateJson: globalData.hasJson && data.needsJsonSerializable,
