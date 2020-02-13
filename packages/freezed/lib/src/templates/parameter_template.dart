@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:freezed/src/templates/prototypes.dart';
 import 'package:meta/meta.dart';
-
+import 'package:collection/collection.dart';
 class GenericsDefinitionTemplate {
   final List<TypeParameterElement> typeParameters;
 

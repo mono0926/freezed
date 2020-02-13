@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:freezed/src/freezed_generator.dart';
 import 'package:meta/meta.dart';
-
+import 'package:collection/collection.dart';
 import 'parameter_template.dart';
 import 'prototypes.dart';
 
@@ -278,13 +278,13 @@ $constructorParameters
 
   String get operatorEqualMethod {
     final properties = constructor.impliedProperties.map((p) {
-      return '(identical(other.${p.name}, ${p.name}) || other.${p.name} == ${p.name})';
+      return '(identical(other.${p.name}, ${p.name}) || const DeepCollectionEquality().equals(other.${p.name}, ${p.name}))';
     });
 
     return '''
 @override
 bool operator ==(dynamic other) {
-  return other is ${['${constructor.redirectedName}$genericsParameter', ...properties].join('&&')};
+  return identical(this, other) || (other is ${['${constructor.redirectedName}$genericsParameter', ...properties].join('&&')});
 }
 ''';
   }
